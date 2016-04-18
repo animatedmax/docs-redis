@@ -11,50 +11,56 @@ You can configure backups to be run for each instance, across both service plans
 
 The key features are:
 
-* Runs at midnight system time every day (not configurable)
+* Runs on a configurable schedule
 * Every instance is backed up, across both service plans
-* You can configure an S3 compatible blobstore as your destination
+* You can configure an S3-compatible blobstore as your destination
 * Data from Redis is flushed to disk, before the backup is started by running a `BGSAVE` on each instance
 * Currently certified and tested against AWS S3 only
+* Backups are labelled with timestamp, instance GUID and plan name
 
 ## Configuration
-To enable backups to be taken, you need to configure the mandatory options in the `Redis for PCF` tile in OpsManager.
+To enable backups, you need to configure the required options in the `Redis for PCF` tile in OpsManager.
 
 Click on the tile in OpsManager, followed by the `Backups` link on the left hand menu.
 
 ![View of OpsManager Backup configuration](backups.jpeg)
 
 ### Access Key ID
-This is your Access Key for your Blobstore
+This is your Access Key for your blobstore.
 
-**Required?** No - this is optional, dependent upon whether it is required by your blobstore
+**Required?** No - this is optional, dependent upon whether it is required by your blobstore.
 
 ### Secret Access Key
-This is your Secret associated with your access key id
+This is the Secret Key associated with your Access Key.
 
-**Required?** No - this is optional, dependent upon whether it is required by your blobstore
+**Required?** No - this is optional, dependent upon whether it is required by your blobstore.
 
 ### Endpoint URL
-This is the endpoint for your blobstore e.g. `http://s3.amazonaws.com`
+This is the endpoint for your blobstore e.g. `http://s3.amazonaws.com`.
 
-**Required?** Yes - If you want to enable backups to be run, you must populate this field.
+**Required?** Yes - required if backups are enabled.
 
 ### Bucket Name
 Name of the bucket inside your blobstore you wish the files to be stored in.
 
-**Required?** Yes - If you want to enable backups to be run, you must populate this field.
+**Required?** Yes - required if backups are enabled.
 
 ### Path
-Path inside the bucket
+Path inside the bucket to save backups to.
 
-**Required?** No - this is optional, it will default to the root if not specified
+**Required?** No - this is optional, it will default to the root if not specified.
 
 ### Redis BGSAVE Timeout
 This is the amount of time that the backup process will wait for the BGSAVE command to complete on your instance, before transferring the RDB file to your configured blobstore.
 
 You can increase this if required for your setup.
 
-**Required?** - Yes, this defaults to 600 seconds.
+**Required?** Yes - this defaults to 600 seconds.
+
+### Cron Schedule
+Backups schedule in crontab format. For example, once daily at 2am is `* 2 * * *`. Also accepts a pre-defined schedule: any of `@yearly`, `@monthly`, `@weekly`, `@daily`, `@hourly`, or `@every <time>`, where `<time>` is any supported time string (e.g. `1h30m`). For more information, see [the cron package documentation](https://godoc.org/github.com/robfig/cron#hdr-Predefined_schedules).
+
+**Required?** Yes - required if backups are enabled. This defaults to daily at midnight.
 
 ## AWS IAM Policy
 The minimum set of policies required in order to upload the backup files are:
@@ -77,11 +83,16 @@ The minimum set of policies required in order to upload the backup files are:
     ]
 }
 ```
-Make sure to replace `<bucket-name>` with your correct value.
+Notes:
 
-## Manual Backups
+* Make sure to replace `<bucket-name>` with your correct value.
+* `s3:CreateBucket` is only required if the S3 bucket does not exist.
 
-It is possible to create a backup of an instance manually by following these steps:
+
+## Triggering a Manual Backup
+
+<a id="triggering"></a>
+Backups of your Redis deployment will automatically occur per the Cron Schedule you set in your deployment. Manual backups can be triggered at any time by following these steps:
 
 * [Follow these steps](http://docs.pivotal.io/pivotalcf/customizing/trouble-advanced.html#ssh) to log into your Ops Manager installation and target the Redis tile deployment.
 * Identify the VM which holds your instance by running `bosh vms`.
@@ -93,15 +104,39 @@ An example output from `bosh vms`:
 
 ![OpsManager VMs view](bosh_vms.jpeg)
 
-* Target your redis deployment with `bosh deployment`.
-* `bosh ssh` into your desired node.
+* Target the manifest of your deployed Redis with `bosh deployment <path/to/manifest.yml>`. If you do not have this file, you can download it by running `bosh download manifest <deployment-name>`.
+* `bosh ssh` into the node you wish to back up (or the `cf-redis-broker` node in a `shared-vm` plan).
+
+Once you have connected to the node, a manual backup can be triggered with these steps:
+
+1. Switch to root using `sudo -i`.
+1. Identify the running `service-backup` process using `ps aux | grep backup`.
+1. The process will have several arguments; copy these and add quote marks to delimit the arguments as appropriate, **taking care to remove `--cron-schedule`.**
+1. Run `/var/vcap/packages/service-backup/bin/manual-backup` with the edited arguments, for example:
+<pre>
+/var/vcap/packages/service-backup/bin/manual-backup s3 \
+--backup-creator-cmd "/var/vcap/packages/redis-backups/bin/snapshot -config /var/vcap/jobs/redis-backups/config/backup-config.yml" \
+--source-folder /var/vcap/store/redis-backup/ \
+--cleanup-cmd "/var/vcap/packages/redis-backups/bin/cleanup -config /var/vcap/jobs/redis-backups/config/backup-config.yml" \
+--service-identifier-cmd "/var/vcap/packages/redis-backups/bin/identifier -config /var/vcap/jobs/redis-backups/config/backup-config.yml" \
+--dest-path backup \
+--aws-access-key-id AWS-ACCESS-KEY \
+--aws-secret-access-key SECRET-ACCESS-KEY \
+--endpoint-url https://s3.amazonaws.com \
+--aws-cli-path /var/vcap/packages/aws-cli/bin/aws \
+--dest-bucket redis-backup-bucket
+</pre>
+
+## Making Your Own Backups
+
+It is possible to create a back up of a Redis instance by hand, bypassing the automated backup tool altogether.
 
 Persistence is enabled on these plans through the use of `RDB` files, using the following Redis config rules:
-```
+<pre>
 save 900 1
 save 300 10
 save 60 10000
-```
+</pre>
 
 ### Shared-VM Plan
 
@@ -113,15 +148,15 @@ On this plan, the `BGSAVE` command is aliased to a random string. This can be ob
 
 #### Steps to Backup
 
-* `bosh ssh` into your desired node. See the above section to identify the correct VM.
-* Change to Root using `sudo -i`.
-* Copy the contents of the `/var/vcap/store/cf-redis-broker` directory to a zip or tar file.
-* Backup the folder / compressed file to your chosen location.
+1. `bosh ssh` into your desired node. See the above section on [identifying the correct VM](#triggering).
+1. Change to root using `sudo -i`.
+1. Copy the contents of the `/var/vcap/store/cf-redis-broker` directory to a .zip or .tar file.
+1. Backup the folder / compressed file to your chosen location.
 
 The `/var/vcap/store/cf-redis-broker` has sub-directories for each instance created of this plan. The backup file for each instance is called `dump.rdb`.
 
 For example, here are two instances:
-```
+<pre>
 root@66358f3e-3428-46df-9bb3-9acc7770b188:/var/vcap/store/cf-redis-broker# find -type f | xargs ls -1
 ./redis-data/3124f373-e9e2-44e1-ad12-a8865d8978b0/db/dump.rdb
 ./redis-data/3124f373-e9e2-44e1-ad12-a8865d8978b0/redis.conf
@@ -130,7 +165,7 @@ root@66358f3e-3428-46df-9bb3-9acc7770b188:/var/vcap/store/cf-redis-broker# find 
 ./redis-data/62333bf9-f023-4566-b233-6686f26b8f4d/redis.conf
 ./redis-data/62333bf9-f023-4566-b233-6686f26b8f4d/redis-server.pid
 ./statefile.json
-```
+</pre>
 
 ### Dedicated-VM Plan
 
@@ -139,9 +174,9 @@ The `redis-cli` can be found in `/var/vcap/packages/redis/bin/redis-cli`.
 
 #### Steps to Backup
 
-* `bosh ssh` into your desired node. See the above section to identify the correct VM.
-* Change to Root using `sudo -i`.
-* Copy the contents of the `/var/vcap/store/redis` directory to a zip or tar file.
+* `bosh ssh` into your desired node. See the above section on [identifying the correct VM](#triggering).
+* Change to root using `sudo -i`.
+* Copy the contents of the `/var/vcap/store/redis` directory to a .zip or .tar file.
 * Backup the folder / compressed file to your chosen location.
 
 The backup file will be named `dump.rdb`.
@@ -164,8 +199,9 @@ The below steps are manual.
 Before restoring your RDB file you must have these prerequisites:
 
 * Same resource configuration as the instance from which you backed up.
-* The persistent disk should be increased to be `3.5 x size of the RDB file` if it is not already so. This allows
-space for the temporary files used during the restore process
+* The persistent disk should be increased to be **3.5 x size of the RDB file** if it is not already so. This allows space for the temporary files used during the restore process
+
+To restore your backup file to another instance of the `Redis for PCF` tile:
 
 1. Create a new instance of the plan that you wish to restore to.
 1. Identify the VM which the instance of your plan is located on by following the steps from the `Manual Backups` section above.
