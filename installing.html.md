@@ -43,9 +43,9 @@ Select the **Redis** tile from the Installation Dashboard to display the configu
 <a id="syslog"></a>
 ## Configuring Syslog Output
 
-1. Select the **Syslog** tab to setup the details of your syslog draining.
-1.  Add the Syslog address and Syslog port of your log management tool.
+1.  Select the **Syslog** tab.
+1.  Add the **syslog destination address**, **port** and **protocol** (TCP/UDP/RELP). The information required for these fields will be provided by your log management tool.
 
-    The information required for these fields will be provided by your log management tool.
+    <br />The default syslog protocol for fresh deployments is TCP. If you are upgrading from Redis for PCF v1.5 and already have the syslog drain configured, the syslog drain will continue to use UDP as before.
 
 1.  Click the **Save** button.
