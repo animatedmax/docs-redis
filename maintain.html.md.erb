@@ -72,7 +72,9 @@ The minimum set of policies required in order to upload the backup files are:
         {
             "Effect": "Allow",
             "Action": [
-                "s3:CreateBucket",
+                "s3:ListBucket",
+                "s3:ListBucketMultipartUploads",
+                "s3:ListMultipartUploadParts",
                 "s3:PutObject"
             ],
             "Resource": [
@@ -87,6 +89,7 @@ Notes:
 
 * Make sure to replace `<bucket-name>` with your correct value.
 * `s3:CreateBucket` is only required if the S3 bucket does not exist.
+* The additional `s3:CreateBucket` action is also required if the S3 bucket does not exist.
 
 
 ## Triggering a Manual Backup
