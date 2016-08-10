@@ -8,12 +8,12 @@ owner: London Services
 ### AZ's and Networks
 We recommend deploying Redis for PCF to a different network than that used by your Elastic Runtime and any other services deployed by Ops Manager.
 
-Assigning multiple AZs to Redis jobs will not guarantee high availability (See Installing Redis for more details). Once your AZ's are set they cannot be changed.
+Assigning multiple AZs to Redis jobs will not guarantee high availability (See Installing Redis for more details). Once your AZs are set they cannot be changed.
 
 ### Security
 To allow this service to have network access you must create [Application Security Groups (ASGs)](http://docs.pivotal.io/pivotalcf/1-7/adminguide/app-sec-groups.html). Ensure your security group allows access to the Redis Service Broker VM and Dedicated VMs configured in your deployment. You can obtain the IP addresses for these VMs in Ops Manager under the <strong>Resource Config</strong> section for the Redis tile.</p>
 
-Redis for Pivotal Cloud Foundry is compatible with the Pivotal IPsec add-on. Information on how to setup Pivotal IPsec can be found [here](http://docs.pivotal.io/addon-ipsec/index.html)
+Redis for Pivotal Cloud Foundry is compatible with the Pivotal IPsec add-on. Information on how to set up Pivotal IPsec can be found [here](http://docs.pivotal.io/addon-ipsec/index.html)
 
 <p class="note"><strong>Note</strong>: Without ASGs, this service will not be usable.</p>
 
@@ -71,6 +71,7 @@ The following table shows the resource and IP requirements for installing the ti
  	</tr>
 </table>
 
+The default resources assigned to Redis for PCF are the minimum required. Operators should calculate anticipated resources and size VMs and disk accordingly.  Once VM and disk size has been set it can be increased but not decreased.
 #### Notes:
 * Shared VM instances run on the Redis Broker.
 * When configuring your persistent disk size for the Redis Broker and Dedicated Nodes ensure it is at least twice the size of the allocated RAM. e.g. If the RAM size is 4096 the peristent disk size should be at least 9192.
