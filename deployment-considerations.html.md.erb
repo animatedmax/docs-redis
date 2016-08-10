@@ -74,19 +74,10 @@ The following table shows the resource and IP requirements for installing the ti
 The default resources assigned to Redis for PCF are the minimum required. Operators should calculate anticipated resources and size VMs and disk accordingly.  Once VM and disk size has been set it can be increased but not decreased.
 
 ### Resource Usage
-During installation of Redis, 2 VMs will be created to perform the
-`broker-registrar` and `smoke-tests` errands. During the Smoke Test errand,
-an example application will be bound to the PCF deployment in a newly created
-org `redis-smoke-test-org` and space `redis-smoke-test-space`. After the Smoke
-Tests and Broker Registrar errands are complete the VMs, example app and orgs
-will be deleted.
+During installation of Redis, 2 VMs will be created to perform the `broker-registrar` and `smoke-tests` errands. During the Smoke Test errand, an example application will be bound to the PCF deployment in a newly created org `redis-smoke-test-org` and space `redis-smoke-test-space`. After the Smoke Tests and Broker Registrar errands are complete the VMs, example app and orgs will be deleted.
 
-After the installation of Redis there will be a `cf-redis-broker` VM that the
-Redis Broker lives on and multiple `dedicated-node` VMs depending on your
-configuration for instance limit of Dedicated Nodes.
+After the installation of Redis there will be a `cf-redis-broker` VM that the Redis Broker lives on and multiple `dedicated-node` VMs depending on your configuration for instance limit of Dedicated Nodes.
 
 #### Notes:
 * Shared VM instances run on the Redis Broker.
-* When configuring your persistent disk size for the Redis Broker and Dedicated
-Nodes ensure it is at least twice the size of the allocated RAM. e.g. If the RAM
- size is 4096 the peristent disk size should be at least 9192.
+* When configuring your persistent disk size for the Redis Broker and Dedicated Nodes ensure it is at least twice the size of the allocated RAM. e.g. If the RAM size is 4096 the peristent disk size should be at least 9192.
