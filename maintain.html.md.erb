@@ -19,50 +19,24 @@ The key features are:
 * Backups are labelled with timestamp, instance GUID and plan name
 
 ## Configuration
-To enable backups, you need to configure the required options in the `Redis for PCF` tile in OpsManager.
+To enable backups, you will first need to choose your backup destination type. Right now, you can choose from S3 or SCP.
 
 Click on the tile in OpsManager, followed by the `Backups` link on the left hand menu.
 
-![View of OpsManager Backup configuration](backups.jpeg)
+### S3 backup fields
 
-### Access Key ID
-This is your Access Key for your blobstore.
+| Field                | Description                                                                                                                                                                                                                                                                                                                                                                                            | Mandatory/Optional                                               |
+|----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
+| Access Key ID        | The access key for your S3 account                                                                                                                                                                                                                                                                                                                                                                     | Mandatory                                                        |
+| Secret Access Key    | The Secret Key associated with your Access Key                                                                                                                                                                                                                                                                                                                                                         | Mandatory                                                        |
+| Endpoint URL         | The endpoint of your S3 account, e.g. `http://s3.amazonaws.com`                                                                                                                                                                                                                                                                                                                                        | Optional, defaults to `http://s3.amazonaws.com` if not specified |
+| Bucket Name          | Name of the bucket you wish the files to be stored in.                                                                                                                                                                                                                                                                                                                                                 | Mandatory                                                        |
+| Path                 | Path inside the bucket to save backups to.                                                                                                                                                                                                                                                                                                                                                             | Mandatory                                                        |
+| Redis BGSAVE Timeout | The amount of time, in seconds, that the backup process will wait for the BGSAVE command to complete on your instance, before transferring the RDB file to your configured destination                                                                                                                                                                                                                 | Mandatory                                                        |
+| Cron Schedule        | Backups schedule in crontab format.  For example, once daily at 2am is `* 2 * * *`.  Also accepts a pre-defined schedule: any of `@yearly`, `@monthly`, `@weekly`, `@daily`, `@hourly`, or `@every <time>`, where `<time>` is any supported time string (e.g. `1h30m`). For more information, see [the cron package documentation](https://godoc.org/github.com/robfig/cron#hdr-Predefined_schedules). | Mandatory                                                        |
 
-**Required?** No - this is optional, dependent upon whether it is required by your blobstore.
-
-### Secret Access Key
-This is the Secret Key associated with your Access Key.
-
-**Required?** No - this is optional, dependent upon whether it is required by your blobstore.
-
-### Endpoint URL
-This is the endpoint for your blobstore e.g. `http://s3.amazonaws.com`.
-
-**Required?** Yes - required if backups are enabled.
-
-### Bucket Name
-Name of the bucket inside your blobstore you wish the files to be stored in.
-
-**Required?** Yes - required if backups are enabled.
-
-### Path
-Path inside the bucket to save backups to.
-
-**Required?** No - this is optional, it will default to the root if not specified.
-
-### Redis BGSAVE Timeout
-This is the amount of time that the backup process will wait for the BGSAVE command to complete on your instance, before transferring the RDB file to your configured blobstore.
-
-You can increase this if required for your setup.
-
-**Required?** Yes - this defaults to 600 seconds.
-
-### Cron Schedule
-Backups schedule in crontab format. For example, once daily at 2am is `* 2 * * *`. Also accepts a pre-defined schedule: any of `@yearly`, `@monthly`, `@weekly`, `@daily`, `@hourly`, or `@every <time>`, where `<time>` is any supported time string (e.g. `1h30m`). For more information, see [the cron package documentation](https://godoc.org/github.com/robfig/cron#hdr-Predefined_schedules).
-
-**Required?** Yes - required if backups are enabled. This defaults to daily at midnight.
-
-## AWS IAM Policy
+### AWS IAM Policy
+An AWS IAM policy describes the permissions related to your bucket.
 The minimum set of policies required in order to upload the backup files are:
 
 ```
@@ -87,9 +61,22 @@ The minimum set of policies required in order to upload the backup files are:
 ```
 Notes:
 
-* Make sure to replace `<bucket-name>` with your correct value.
+* Make sure to replace `<bucket-name>` with your correct values.
 * `s3:CreateBucket` is only required if the S3 bucket does not exist.
 * The additional `s3:CreateBucket` action is also required if the S3 bucket does not exist.
+
+
+### SCP backup fields
+
+| Field                 | Description                                                                                                                                                               | Mandatory/Optional |
+|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|
+| Username              | The username to use for transferring backups to the scp server                                                                                                            | Mandatory          |
+| Private Key           | The private ssh key of the user configured in `Username`                                                                                                                  | Mandatory          |
+| Hostname              | The hostname or IP address of the SCP server                                                                                                                              | Mandatory          |
+| Destination Directory | The path in the scp server, where the backups will be transferred                                                                                                         | Mandatory          |
+| SCP Port              | The scp port of the scp server                                                                                                                                            | Mandatory          |
+| Cron Schedule         | Backups schedule in crontab format. Refer to table for S3 backups for details                                                                                             | Mandatory          |
+| Redis BGSAVE timeout  | The amount of time, in seconds, that the backup process will wait for the BGSAVE command to complete on your instance, before transferring the RDB file to the scp server | Mandatory          |
 
 
 ## Triggering a Manual Backup
