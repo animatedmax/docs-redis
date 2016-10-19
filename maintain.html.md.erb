@@ -19,7 +19,7 @@ The key features are:
 * Backups are labelled with timestamp, instance GUID and plan name
 
 ## Configuration
-To enable backups, you will first need to choose your backup destination type. Right now, you can choose from S3 or SCP.
+To enable backups, you will first need to choose your backup destination type. Right now, you can choose from S3, SCP or Google Cloud Storage (GCS).
 
 Click on the tile in OpsManager, followed by the `Backups` link on the left hand menu.
 
@@ -77,6 +77,18 @@ Notes:
 | SCP Port              | The scp port of the scp server                                                                                                                                            | Mandatory          |
 | Cron Schedule         | Backups schedule in crontab format. Refer to table for S3 backups for details                                                                                             | Mandatory          |
 | Redis BGSAVE timeout  | The amount of time, in seconds, that the backup process will wait for the BGSAVE command to complete on your instance, before transferring the RDB file to the scp server | Mandatory          |
+
+### GCS backup fields
+
+PCF Redis uses service account credentials to upload backups to Google Cloud Storage. The service account should have `Storage Admin` permissions. Please refer to the [documentation](https://cloud.google.com/storage/docs/authentication#service_accounts) for details on how to set up a GCP service account.
+
+| Field                       | Description                                                                                                                                                                                                                                                                                      | Mandatory/Optional |
+|-----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|
+| Project ID                  | GCP Project ID                                                                                                                                                                                                                                                                                   | Mandatory          |
+| Bucket name                 | Name of the bucket you wish the files to be stored in.                                                                                                                                                                                                                                           | Mandatory          |
+| Service account private key | The JSON Secret Key associated with your Service Account. See [documentation](https://cloud.google.com/storage/docs/authentication#generating-a-private-key) for details on how to set up service account keys.                                                                                  | Mandatory          |
+| Redis BGSAVE timeout        | The amount of time, in seconds, that the backup process will wait for the BGSAVE command to complete on your instance, before transferring the RDB file to your configured destination                                                                                                           | Mandatory          |
+| Cron Schedule               | Backups schedule in crontab format. For example, once daily at 2am is * 2 * * *. Also accepts a pre-defined schedule: any of @yearly, @monthly, @weekly, @daily, @hourly, or @every , where is any supported time string (e.g. 1h30m). For more information, see the cron package documentation. | Mandatory          |
 
 
 ## Triggering a Manual Backup
