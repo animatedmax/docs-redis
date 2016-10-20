@@ -91,6 +91,18 @@ PCF Redis uses service account credentials to upload backups to Google Cloud Sto
 | Cron Schedule               | Backups schedule in crontab format. For example, once daily at 2am is * 2 * * *. Also accepts a pre-defined schedule: any of @yearly, @monthly, @weekly, @daily, @hourly, or @every , where is any supported time string (e.g. 1h30m). For more information, see the cron package documentation. | Mandatory          |
 
 
+### Azure backup fields
+
+| Field                    | Description                                                                                                                                                                                                                                                                                      | Mandatory/Optional |
+|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|
+| Account                  | Account name                                                                                                                                                                                                                                                                                     | Mandatory          |
+| Azure Storage Access Key | Azure specific credentials required to write to the Azure container                                                                                                                                                                                                                              | Mandatory          |
+| Container name           | Name of the Azure container which will store backup files.                                                                                                                                                                                                                                       | Mandatory          |
+| Destination Directory    | Directory where the backup files will be stored within the Azure container.                                                                                                                                                                                                                      | Mandatory          |
+| Blob Store Base URL      | URL pointing to Azure resource                                                                                                                                                                                                                                                                   | Optional           |
+| Redis BGSAVE timeout     | The amount of time, in seconds, that the backup process will wait for the BGSAVE command to complete on your instance, before transferring the RDB file to your configured destination                                                                                                           | Mandatory          |
+| Cron Schedule            | Backups schedule in crontab format. For example, once daily at 2am is * 2 * * *. Also accepts a pre-defined schedule: any of @yearly, @monthly, @weekly, @daily, @hourly, or @every , where is any supported time string (e.g. 1h30m). For more information, see the cron package documentation. | Mandatory          |
+
 ## Triggering a Manual Backup
 
 <a id="triggering"></a>
