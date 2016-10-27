@@ -69,3 +69,12 @@ None
 
 <a id="other-notes"></a>
 Redis for PCF 1.6 supports configuring multiple AZs. However, assigning multiple AZs to Redis jobs will not guarantee high availability. Shared-VM instances will run on a single node in just one of the configured availability zones and are therefore not highly available. Each Dedicated-VM instance could be assigned to any of the configured availability zones, however each instance still operates as a single node with no clustering. This separation over availability zones provides no high availability.
+
+## Redis for PCF 1.6.1
+Update stemcell to 3263.2
+  
+## Redis for PCF 1.6.2
+Update loggregator release to eliminate spawning subshell for timestamps
+  
+  
+  
