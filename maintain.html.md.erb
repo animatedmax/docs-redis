@@ -14,6 +14,7 @@ The key features are:
 * Runs on a configurable schedule
 * Every instance is backed up, across both service plans
 * The Redis broker statefile is backed up
+* For each backup artefact, a file is created that contains the MD5 checksum for that artefact. This can be used to validate that the artefact is not corrupted.
 * You can configure an S3-compatible blobstore as your destination
 * Data from Redis is flushed to disk, before the backup is started by running a `BGSAVE` on each instance
 * Currently certified and tested against AWS S3 only
