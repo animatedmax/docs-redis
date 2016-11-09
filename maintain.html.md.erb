@@ -130,22 +130,11 @@ An example output from `bosh vms`:
 Once you have connected to the node, a manual backup can be triggered with these steps:
 
 1. Switch to root using `sudo -i`.
-1. Identify the running `service-backup` process using `ps aux | grep backup`.
-1. The process will have several arguments; copy these and add quote marks to delimit the arguments as appropriate, **taking care to remove `--cron-schedule`.**
-1. Run `/var/vcap/packages/service-backup/bin/manual-backup` with the edited arguments, for example:
-<pre>
-/var/vcap/packages/service-backup/bin/manual-backup s3 \
---backup-creator-cmd "/var/vcap/packages/redis-backups/bin/snapshot -config /var/vcap/jobs/redis-backups/config/backup-config.yml" \
---source-folder /var/vcap/store/redis-backup/ \
---cleanup-cmd "/var/vcap/packages/redis-backups/bin/cleanup -config /var/vcap/jobs/redis-backups/config/backup-config.yml" \
---service-identifier-cmd "/var/vcap/packages/redis-backups/bin/identifier -config /var/vcap/jobs/redis-backups/config/backup-config.yml" \
---dest-path backup \
---aws-access-key-id AWS-ACCESS-KEY \
---aws-secret-access-key SECRET-ACCESS-KEY \
---endpoint-url https://s3.amazonaws.com \
---aws-cli-path /var/vcap/packages/aws-cli/bin/aws \
---dest-bucket redis-backup-bucket
-</pre>
+1. Run `/var/vcap/jobs/service-backup/bin/manual-backup`
+
+#### Notes
+
+Triggering a manual backup of a large dump.rdb could take sufficiently long that your SSH connection will timeout. Ensure that you have given yourself enough of a timeout to complete the backup.
 
 ## Making Your Own Backups
 
