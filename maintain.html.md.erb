@@ -203,9 +203,7 @@ Refer to the [Redis documentation](http://redis.io/documentation) for more detai
 
 You can also restore your backup file to another instance of the `Redis for PCF` tile.
 
-The below steps are manual.
-
-Before restoring your RDB file you must have these prerequisites:
+#### Prerequisites
 
 * Same resource configuration as the instance from which you backed up.
 * The persistent disk should be increased to be **3.5 x size of the RDB file** if it is not already so. This allows space for the temporary files used during the restore process
@@ -218,28 +216,61 @@ To restore your backup file to another instance of the `Redis for PCF` tile:
 
 ### Dedicated-VM Plan
 
-1. You will need to have access to the service instance password. This can be retrieved using the following command:
-  -  Password: `grep requirepass /var/vcap/store/redis/redis.conf`
+`Redis for PCF` version 1.7 and later provides a script to automatically restore data in a newly provisioned Redis instance.
+
+#### Preparation
+1. Transfer your backup RDB file to a local path on the VM (`<path-to-rdb-backup-on-vm>`)
 1. Switch to root user `sudo su`
-1. Run `monit stop all`
-1. Wait for monit services to enter the `not monitored` state, you can watch this with `watch monit summary`
-1. Clean up existing Redis data files:
+1. Note the service instance password
+  - Password: `grep requirepass /var/vcap/store/redis/redis.conf`
+
+#### Execution
+1. Run `/var/vcap/jobs/redis-backups/bin/restore --sourceRDB <path-to-rdb-backup-on-vm>`. If `sourceRDB` is not provided, the backup is assumed to be at `/var/vcap/store/redis-backup/dump.rdb`
+1. Tail the script logs at `/var/vcap/sys/log/redis-backups/redis-backups.log` to see progress. When the data restore has been successfully completed, you will see the message `Redis data restore completed successfully`.
+
+#### Debugging
+
+The data restore script runs the steps listed below. It logs its process along the way and provides helpful messages in case of failure.
+
+The script logs at `/var/vcap/sys/log/redis-backups/redis-backups.log`. <br />
+If a step has failed, resolve the reason that caused it to fail and execute the failed step and every next step manually.
+
+1. **`StopAll`** <br />
+Run `monit stop all`
+1. **`WaitForStop`** <br />
+Wait for monit services to enter the `not monitored` state, you can watch this with `watch monit summary`
+1. **`DeleteExistingPersistenceFiles`** <br />
+Clean up existing Redis data files:
   - `rm -f /var/vcap/store/redis/appendonly.aof`
   - `rm -f /var/vcap/store/redis/dump.rdb`
-1. Restore your Redis backup file to `/var/vcap/store/redis/dump.rdb` and correct the owner and permissions with `chown vcap:vcap /var/vcap/store/redis/dump.rdb && chmod 660 /var/vcap/store/redis/dump.rdb`
-1. Edit the template Redis config file with `vim $(find /var/vcap/data/jobs/ -name redis.conf)` and make the following line changes:
+1. **`CopyBackupFileWithCorrectPermissions`** <br />
+Restore your Redis backup file to `/var/vcap/store/redis/dump.rdb` and correct the owner and permissions with `chown vcap:vcap /var/vcap/store/redis/dump.rdb && chmod 660 /var/vcap/store/redis/dump.rdb`
+1. **`SetAppendOnly`** <br />
+`Edit the template Redis config file with `vim $(find /var/vcap/data/jobs/ -name redis.conf)` and make the following line changes:
   -  `appendonly yes` -> `appendonly no`
-1. Run `monit start all`
-1. Wait for monit services to enter the `running` state, you can watch this with `watch monit summary`
-1. Run `/var/vcap/packages/redis/bin/redis-cli -a {instance_password} BGREWRITEAOF`
-1. Run `watch "/var/vcap/packages/redis/bin/redis-cli -a {instance_password} INFO | grep aof_rewrite_in_progress"` until `aof_rewrite_in_progress` is `0`
-1. Run `monit stop all`
-1. Wait for monit services to enter the `not monitored` state, you can watch this with `watch monit summary`
-1. Edit the template Redis config file with `vim $(find /var/vcap/data/jobs/ -name redis.conf)` and make the following line changes:
+1. **`StartAll`** <br />
+Run `monit start all`
+1. **`WaitForStart`** <br />
+Wait for monit services to enter the `running` state, you can watch this with `watch monit summary`
+1. **`RewriteAOF`** <br />
+Run `/var/vcap/packages/redis/bin/redis-cli -a {instance_password} BGREWRITEAOF`
+1. **`RewriteAOF`** <br />
+Run `watch "/var/vcap/packages/redis/bin/redis-cli -a {instance_password} INFO | grep aof_rewrite_in_progress"` until `aof_rewrite_in_progress` is `0`
+1. **`StopAll`** <br />
+Run `monit stop all`
+1. **`WaitForStop`** <br />
+Wait for monit services to enter the `not monitored` state, you can watch this with `watch monit summary`
+1. **`ChownFromUserAndGroup`** <br />
+Set correct owner on `appendonly.aof` by running `chown vcap:vcap /var/vcap/store/redis/appendonly.aof`
+1. **`SetAppendOnly`** <br />
+Edit the template Redis config file with `vim $(find /var/vcap/data/jobs/ -name redis.conf)` and make the following line changes:
   -  `appendonly no` -> `appendonly yes`
-1. Run `monit start all`
+1. **`StartAll`** <br />
+Run `monit start all`
 
 ### Shared-VM Plan
+
+There is currently no automated script to perform a restore into a new `shared-vm` instance, so the following steps must be executed manually.
 
 1. Make sure you have a service provisioned that you can restore to. The instance ID will be required in future steps. You can retrieve this by running `cf service {instance name} --guid`
 1. You will need to have access to the service instance password and port. This can be retrieved using the following commands:
