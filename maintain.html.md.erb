@@ -260,7 +260,7 @@ Run `watch "/var/vcap/packages/redis/bin/redis-cli -a {instance_password} INFO |
 Run `monit stop all`
 1. **`WaitForStop`** <br />
 Wait for monit services to enter the `not monitored` state, you can watch this with `watch monit summary`
-1. **`ChownFromUserAndGroup`** <br />
+1. **`ChownToUserAndGroup`** <br />
 Set correct owner on `appendonly.aof` by running `chown vcap:vcap /var/vcap/store/redis/appendonly.aof`
 1. **`SetAppendOnly`** <br />
 Edit the template Redis config file with `vim $(find /var/vcap/data/jobs/ -name redis.conf)` and make the following line changes:
