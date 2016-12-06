@@ -223,7 +223,7 @@ To restore your backup file to another instance of the `Redis for PCF` tile:
 ### Dedicated-VM Plan
 
 #### Execution
-1. Run `/var/vcap/jobs/redis-backups/bin/restore -sourceRDB <path-to-rdb-backup-on-vm>`. If `sourceRDB` is not provided, the backup is assumed to be at `/var/vcap/store/redis-backup/dump.rdb`
+1. Run `/var/vcap/jobs/redis-backups/bin/restore --sourceRDB <path-to-rdb-backup-on-vm>`. If `sourceRDB` is not provided, the backup is assumed to be at `/var/vcap/store/redis-backup/dump.rdb`
 1. Tail the script logs at `/var/vcap/sys/log/redis-backups/redis-backups.log` to see progress. When the data restore has been successfully completed, you will see the message `Redis data restore completed successfully`.
 
 #### Debugging
@@ -271,7 +271,7 @@ Run `monit start all`
 
 #### Execution
 1. Retrieve `{instance_guid}` by running: `cf service {instance_name} --guid`
-1. Run `/var/vcap/jobs/redis-backups/bin/restore -sourceRDB <path-to-rdb-backup-on-vm> -redisDbDir /var/vcap/store/cf-redis-broker/redis-data/{instance_guid}/db -redisConfDir /var/vcap/store/cf-redis-broker/redis-data/{instance_guid}`. If `sourceRDB` is not provided, the backup is assumed to be at `/var/vcap/store/redis-backup/dump.rdb`
+1. Run `/var/vcap/jobs/redis-backups/bin/restore --sourceRDB <path-to-rdb-backup-on-vm> --sharedVmGuid {instance_guid}. If `sourceRDB` is not provided, the backup is assumed to be at `/var/vcap/store/redis-backup/dump.rdb`
 1. Tail the script logs at `/var/vcap/sys/log/redis-backups/redis-backups.log` to see progress. When the data restore has been successfully completed, you will see the message `Redis data restore completed successfully`.
 
 
