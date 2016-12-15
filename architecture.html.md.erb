@@ -1,0 +1,56 @@
+---
+title: Redis for PCF 1.6 Architecture and Lifecycle
+owner: London Services
+---
+
+## <a id ="config"></a>How Redis for PCF Configures Redis 
+
+You should be aware that Redis for PCF configures Redis in the following ways. These configurations cannot be changed.
+
++ Redis is configured with a maxmemory-policy of no-eviction. 
+This policy means that when the memory is full, the service does not evict any keys or 
+perform any write operations until memory becomes available. 
+
++ Persistence is configured for both `RDB` and `AOF`. 
+The default maximum number of connections, maxclients, is set at 10000 but 
+this number is adjusted by Redis according to the number of file handles available. 
+
++ Replication and event notification are not configured.  
+
+A sample `redis.conf` from a Dedicated-VM plan instance can be viewed on [Sample Redis Configuration] (redisconf.html)
+
+##  <a id="plans"></a>Service Plans
+
+Redis for PCF offers Dedicated-VM and Shared-VM plans.
+
+### Shared-VM Plan
+
+* This plan deploys a Redis instance inside the service broker VM.
+* This plan can be disabled by setting the `Max instances limit` on the `Shared-VM plan` tab in OpsManager to be `0`.
+* The maximum number of instances can be increased from the default 5 to a value of your choosing. If you increase the number of instances that can be run on this single VM, you should consider increasing the resources allocated to the VM. In particular RAM and CPU. You can overcommit to a certain extent, but may start to see performance degradations.
+* You can also increase the maximum amount of RAM allocated to each Redis process (service instance) that is running on this VM
+* If you decrease the service instance limit, any instances that are running where the count is now greater than the limit are not terminated. They are left to be removed naturally, until the total count drops below the new limit you cannot create any new instances. For example if you had a limit of 10 and all were used and reduced this to 8, the two instances will be left running until you terminate them yourself.
+
+### Dedicated-VM Plan 
+
+* This plan deploys the operator-configured number of dedicated Redis VMs alongside the service broker VM.
+* These instances are pre-provisioned during the deployment of the tile from OpsManager into a **pool**. The VMs are provisioned and configured with a Redis process ready to be used when an instance of the Dedicated-VM plan is requested.
+* A default deployment will provision `5 instances` of the Dedicated-VM plan into the **pool**. This number can be increased on the `Resource Config` tab in Ops Manager, either in the initial deployment, or subsequently thereafter. The number of VMs **cannot** be decreased once deployed.
+* When a user provisions an instance, it is marked as in use and taken out of the **pool**.
+* When a user deprovisions an instance, the instance is cleansed of any data and configuration to restore it to a fresh state and placed back into the pool, ready to be used again.
+* This plan can be disabled by setting the number of instances of the `Dedicated node` job in Ops Manager to `0`.
+
+## <a id ="architecture"></a>Redis for PCF Architecture
+
+This diagram shows how the architecture of the service broker and Shared-VM and Dedicated-VM plans and how the user's app binds to a Redis instance. 
+
+![Architecture Diagram](redis-architecture.png)
+
+## <a id ="lifecycle"></a>Redis for PCF Lifecycle
+
+Here is the lifecycle of Redis for PCF, from an operator installing the tile through an app developer using the service then an operator deleting the tile.
+
+![Lifecycle Diagram](redis-timeline.png)
+
+
+

@@ -1,264 +1,50 @@
 ---
-title: Maintaining Redis for PCF
+title: Best Practices for Operating Redis for PCF
 owner: London Services
 ---
 
+This topic is for PCF operators. It introduces some best practices, but does not provide details about operation.
 
-<a id="backup"></a>
-# Creating Backups of Redis Instances
+## <a id="Best Practice"></a>Best Practices
 
-You can configure backups to be run for each instance, across both service plans.
+Pivotal recommends that operators do the following:
 
-The key features are:
+* Resource Allocation — Work with app developers to anticipate memory requirements and to configure VM sizes. 
+Redis for PCF is configured by default with small VMs. For information about configuring VM sizes, 
+see [Configure Redis Service Plans](/redis/1-6/installing.html#configuration).
+* Logs — Configure a syslog output. Storing logs in an external service helps operators debug issues both current and historical. 
+* Monitoring — Set up a monitoring dashboard for metrics to track the health of the installation. 
+* Backing Up Data — When using Redis for persistence, configure automatic backups so that data can be restored in an emergency. 
+Validate the backed-up data with a test restore.
 
-* Runs at midnight system time every day (not configurable)
-* Every instance is backed up, across both service plans
-* You can configure an S3 compatible blobstore as your destination
-* Data from Redis is flushed to disk, before the backup is started by running a `BGSAVE` on each instance
-* Currently certified and tested against AWS S3 only
+## <a id="backup"></a>About Creating Backups of Redis Instances
 
-## Configuration
-To enable backups to be taken, you need to configure the mandatory options in the `Redis for PCF` tile in OpsManager.
+You can back up Redis for PCF instances in two way:
 
-Click on the tile in OpsManager, followed by the `Backups` link on the left hand menu.
++ Configure automatic backups to be run for each instance, across both service plans. For information about setting up automatic backups, see [Configure Backups](./installing.html#backup).
++ Create manual backups of individual instances. For information about how to make manual backups of instances, see [Manual Backup and Restore of Redis for PCF](./manual-br.html).
 
-![View of OpsManager Backup configuration](backups.jpeg)
+## <a id="metrics"></a> About Monitoring Redis for PCF
 
-### Access Key ID
-This is your Access Key for your Blobstore
+### Redis Metrics
 
-**Required?** No - this is optional, dependent upon whether it is required by your blobstore
+Redis for PCF emits Redis metrics via the firehose. Details [here](./monitoring.html) 
 
-### Secret Access Key
-This is your Secret associated with your access key id
+### Logging
 
-**Required?** No - this is optional, dependent upon whether it is required by your blobstore
+Syslog can be forwarded to an external log service.
 
-### Endpoint URL
-This is the endpoint for your blobstore e.g. `http://s3.amazonaws.com`
+The following example shows syslog message:
 
-**Required?** Yes - If you want to enable backups to be run, you must populate this field.
+<pre class=terminal>
+Nov 15 17:05:01 10.0.24.10 audispd: [job=dedicated-node index=4]  node=7bfe8b1b-6c
+fd-4d33-b704-c9214ce6bb3e type=USER_ACCT msg=audit(1479229501.290:86): pid=6655 ui
+d=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting acct="root" exe="/usr/sbi
+n/cron" hostname=? addr=? terminal=cron res=success'
+</pre>
 
-### Bucket Name
-Name of the bucket inside your blobstore you wish the files to be stored in.
+For information about how to set up syslog output, see [Configure Syslog Output](./installing.html#syslog).
 
-**Required?** Yes - If you want to enable backups to be run, you must populate this field.
+##  <a id="smoke"></a>Smoke Tests
 
-### Path
-Path inside the bucket
-
-**Required?** No - this is optional, it will default to the root if not specified
-
-### Redis BGSAVE Timeout
-This is the amount of time that the backup process will wait for the BGSAVE command to complete on your instance, before transferring the RDB file to your configured blobstore.
-
-You can increase this if required for your setup.
-
-**Required?** - Yes, this defaults to 600 seconds.
-
-## AWS IAM Policy
-The minimum set of policies required in order to upload the backup files are:
-
-```
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:CreateBucket",
-                "s3:PutObject"
-            ],
-            "Resource": [
-                "arn:aws:s3:::<bucket-name>",
-                "arn:aws:s3:::<bucket-name>/*"
-            ]
-        }
-    ]
-}
-```
-Make sure to replace `<bucket-name>` with your correct value.
-
-## Manual Backups
-
-It is possible to create a backup of an instance manually by following these steps:
-
-* [Follow these steps](http://docs.pivotal.io/pivotalcf/customizing/trouble-advanced.html#ssh) to log into your Ops Manager installation and target the Redis tile deployment.
-* Identify the VM which holds your instance by running `bosh vms`.
-  * For the `shared-vm` plan this will be the job name containing `cf-redis-broker`.
-  * For the `dedicated-vm` plan this will be the job name containing `dedicated-node`.
-  * You can identify the exact node for your `dedicated-vm` service instance by comparing the IP Address from your application bindings.
-
-An example output from `bosh vms`:
-
-![OpsManager VMs view](bosh_vms.jpeg)
-
-* Target your redis deployment with `bosh deployment`.
-* `bosh ssh` into your desired node.
-
-Persistence is enabled on these plans through the use of `RDB` files, using the following Redis config rules:
-```
-save 900 1
-save 300 10
-save 60 10000
-```
-
-### Shared-VM Plan
-
-You can either take the latest RDB file held on disk, which is generated by the above the rules, or trigger a recent update by using the `redis-cli` to trigger a `BGSAVE`. Credentials to log into the `redis-cli` can be obtained from `VCAP_SERVICES` for your bound application.
-
-The `redis-cli` is located in `/var/vcap/packages/redis/bin/redis-cli`.
-
-On this plan, the `BGSAVE` command is aliased to a random string. This can be obtained from Ops Manager in the credentials tab.
-
-#### Steps to Backup
-
-* `bosh ssh` into your desired node. See the above section to identify the correct VM.
-* Change to Root using `sudo -i`.
-* Copy the contents of the `/var/vcap/store/cf-redis-broker` directory to a zip or tar file.
-* Backup the folder / compressed file to your chosen location.
-
-The `/var/vcap/store/cf-redis-broker` has sub-directories for each instance created of this plan. The backup file for each instance is called `dump.rdb`.
-
-For example, here are two instances:
-```
-root@66358f3e-3428-46df-9bb3-9acc7770b188:/var/vcap/store/cf-redis-broker# find -type f | xargs ls -1
-./redis-data/3124f373-e9e2-44e1-ad12-a8865d8978b0/db/dump.rdb
-./redis-data/3124f373-e9e2-44e1-ad12-a8865d8978b0/redis.conf
-./redis-data/3124f373-e9e2-44e1-ad12-a8865d8978b0/redis-server.pid
-./redis-data/62333bf9-f023-4566-b233-6686f26b8f4d/db/dump.rdb
-./redis-data/62333bf9-f023-4566-b233-6686f26b8f4d/redis.conf
-./redis-data/62333bf9-f023-4566-b233-6686f26b8f4d/redis-server.pid
-./statefile.json
-```
-
-### Dedicated-VM Plan
-
-You can either take the latest RDB file on disk, as generated by the above rules, or trigger a more recent RDB file by executing the `BGSAVE` command using the `redis-cli`. Credentials can be obtained from the `VCAP_SERVICES` from your bound application.
-The `redis-cli` can be found in `/var/vcap/packages/redis/bin/redis-cli`.
-
-#### Steps to Backup
-
-* `bosh ssh` into your desired node. See the above section to identify the correct VM.
-* Change to Root using `sudo -i`.
-* Copy the contents of the `/var/vcap/store/redis` directory to a zip or tar file.
-* Backup the folder / compressed file to your chosen location.
-
-The backup file will be named `dump.rdb`.
-
-<a id="restore"></a>
-## Restore Redis Instance from a Backup
-
-### To a Local System
-You can choose to restore the RDB file to a local Redis instance.
-
-The steps to do this depend on your configuration and setup.
-Refer to the [Redis documentation](http://redis.io/documentation) for more details.
-
-### To Pivotal Cloud Foundry
-
-You can also restore your backup file to another instance of the `Redis for PCF` tile.
-
-The below steps are manual.
-
-Before restoring your RDB file you must have these prerequisites:
-
-* Same resource configuration as the instance from which you backed up.
-* The persistent disk should be increased to be `3.5 x size of the RDB file` if it is not already so. This allows
-space for the temporary files used during the restore process
-
-1. Create a new instance of the plan that you wish to restore to.
-1. Identify the VM which the instance of your plan is located on by following the steps from the `Manual Backups` section above.
-1. `bosh ssh` into the identified VM.
-
-### Dedicated-VM Plan
-
-1. Run `monit stop all`
-1. Wait for monit services to enter the `not monitored` state, you can watch this with `watch monit summary`
-1. Restore your Redis backup file to `/var/vcap/store/redis/dump.rdb` and correct the owner and permissions with `chown vcap:vcap /var/vcap/store/redis/dump.rdb && chmod 660 /var/vcap/store/redis/dump.rdb`
-1. Edit the template Redis config file with `vim $(find /var/vcap/data/jobs/ -name redis.conf)` and change `appendonly` to `no`
-1. run `rm -f /var/vcap/store/redis/appendonly.aof`
-1. Run `monit start all`
-1. Wait for monit services to enter the `running` state, you can watch this with `watch monit summary`
-1. Run `/var/vcap/packages/redis/bin/redis-cli -a {instance_password} BGREWRITEAOF`
-1. Run `watch "/var/vcap/packages/redis/bin/redis-cli -a {instance_password} INFO | grep aof_rewrite_in_progress"` until `aof_rewrite_in_progress` is `0`
-1. Run `monit stop all`
-1. Wait for monit services to enter the `not monitored` state, you can watch this with `watch monit summary`
-1. Edit the template Redis config file with `vim $(find /var/vcap/data/jobs/ -name redis.conf)` and change `appendonly` to `yes`
-1. Run `monit start all`
-
-### Shared-VM Plan
-
-1. Run `monit stop all && pkill redis-server`
-1. Wait for monit services to enter the `not monitored` state, you can watch this with `watch monit summary`
-1. Confirm no running instances of `redis-server` with `ps aux | grep redis-server`
-1. Restore your Redis backup file to `/var/vcap/store/cf-redis-broker/redis-data/{instance_id}/db/dump.rdb` and correct the owner and permissions with `chown vcap:vcap /var/vcap/store/cf-redis-broker/redis-data/{instance_id}/db/dump.rdb && chmod 660 /var/vcap/store/cf-redis-broker/redis-data/{instance_id}/db/dump.rdb` (your instance id can be found using the CF API - `cf service {instance name} --guid`)
-1. Edit the template Redis config file with `vim $(find /var/vcap/data/jobs/ -name redis.conf)` and change `appendonly` to `no` and `BGREWRITEAOF` alias to `BGREWRITEAOFTEMP`
-1. Run rm -f `/var/vcap/store/cf-redis-broker/redis-data/{instance_id}/db/appendonly.aof`
-1. Run `monit start all`
-1. Wait for monit services to enter the `running` state, you can watch this with `watch monit summary`
-1. Run `/var/vcap/packages/redis/bin/redis-cli -a {instance_password} BGREWRITEAOFTEMP`
-1. Run `watch "/var/vcap/packages/redis/bin/redis-cli -a {instance_password} -p {instance_port} INFO | grep aof_rewrite_in_progress"` until `aof_rewrite_in_progress` is `0`
-1. Run `monit stop all && pkill redis-server`
-1. Wait for monit services to enter the `not monitored` state, you can watch this with `watch monit summary`
-1. Confirm no running instances of `redis-server` with `ps aux | grep redis-server`
-1. Edit the template Redis config file with `vim $(find /var/vcap/data/jobs/ -name redis.conf)` and change `appendonly` to `yes` and `BGREWRITEAOF` alias to `""`
-1. Run `monit start all`
-
-<a id="recovery"></a>
-# Recovering Redis Instances
-
-In the event of a recovery of Cloud Foundry, it is possible to recover bound
-Redis instances to healthy states that are in sync with Cloud Foundry. There are
-a few caveats to being able to recover previous instance state fully that
-depend on your plan.
-
-## Shared-VM Plan Caveats
-
-* You need a backed up RDB Redis dump file - this would be stored in your S3
-buckets if you have backups configured
-* You need a backed up `/var/vcap/store/cf-redis-broker/redis-data` directory
-from the service broker node (you do not need to backup and `*.aof` or
-`*.rdb` files from subdirectories if you have backups configured)
-
-## Dedicated-VM Plan Caveats
-
-* You need a backed up RDB Redis dump file - this would be stored in your S3
-buckets if you have backups configured
-* You need a backed up `/var/vcap/store/redis/statefile.json` from the service
-broker node
-
-## Note
-
-This procedure assumes that a recovery of service information and service keys
-assigned to instances are restored with a restore of Cloud Foundry.
-
-## Recovery Procedure
-
-After redeploying Redis, take the following steps.
-
-### Shared-VM Plan
-
-1. `bosh ssh` into the service broker node of your Redis deployment
-1. Run `monit stop all && pkill redis-server`
-1. Wait for monit services to enter the `not monitored` state, you can watch
-this with `watch monit summary`
-1. Confirm no running instances of `redis-server` with
-`ps aux | grep redis-server`
-1. Copy the backed up `redis-data` directory into `/var/vcap/store/cf-redis-broker`
-1. Follow the instructions [here](#restore) for your plan, skipping the first
-four steps described here, for restoring your backed up Redis data
-1. Your Redis instance is now recovered
-
-### Dedicated-VM Plan
-
-1. `bosh ssh` into the service broker node of your Redis deployment
-1. Run `monit stop all`
-1. Wait for monit services to enter the `not monitored` state, you can watch
-this with `watch monit summary`
-1. Copy the backed up `/var/vcap/store/cf-redis-broker/statefile.json` and
-ensure ownership and permissions are correct with
-`chown vcap:vcap /var/vcap/store/redis/dump.rdb && chmod 660 /var/vcap/store/redis/dump.rdb`
-1. Follow the instructions [here](#restore) for your plan, skipping the first three steps
-described here, for restoring your backed up Redis data
-1. Your Redis instance is now recovered
+Redis for PCF has smoke tests that are run as a post-install errand by Ops Manager. Information on what they do is [here](./smoke-tests.html). They can be run by the operator via `bosh run errand smoke-tests`.

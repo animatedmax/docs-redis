@@ -1,33 +1,39 @@
 ---
-title: Installing Redis for PCF
+title: Installing and Upgrading Redis for PCF
 owner: London Services
 ---
 
-<a id="install"></a>
-## Installation Steps
+## <a id="install"></a>Installation Steps
 
 To add Redis for PCF to Ops Manager, follow the procedure for adding Pivotal Ops Manager tiles:
 
 1. Download the product file from [Pivotal Network](https://network.pivotal.io/products/p-redis).
 1. Upload the product file to your Ops Manager installation.
 1. Click **Add** next to the uploaded product description in the Available Products view to add this product to your staging area.
-1. (Optional) Click the newly added tile to configure your possible service plans configure and [syslog draining](#syslog).
+1. (Optional) Click the newly-added tile to configure your [possible service plans](#configuration), [syslog draining](#syslog), and [backups](#backup).
 1. Click **Apply Changes** to install the service.
 
+## <a id="configuration"></a>Configuring PCF Redis
 
-Select the **Redis** tile from the Installation Dashboard to display the configuration page and configure the Redis service plans.
+###  <a id="service-plans"></a>Configure Redis Service Plans
+ 
+Select the **Redis** tile from the Installation Dashboard to display the configuration page and allocate resources to Redis service plans.
 
-### Shared-VM Plan
+####  <a id="shared-vm-config"></a>Shared-VM Plan 
 
 1.  Select the **Shared-VM Plan** tab to configure the memory limit for each Redis instance and the maximum number of instances that can be created.
+![shared vm config](shared-vm-config.png)
+
+1.  Enter the maximum number of instances and the memory limit for each Redis instance.
+
+1.  Click the **Save** button.
 
     <br />Shared-VM instances run on the Redis Broker.
 
     <br />The memory and instance limits for your Shared-VM Redis instances should depend on the total memory of your Redis broker.
-    When configuring the maximum number of Redis service instances that can be created, 
-you need to take into account the maximum memory each Redis instance could use in correlation with how much total memory the Redis broker has.
-    Pivotal recommends that you only allow up to 45% of your Redis broker's total memory to be used by all Redis instances.
-    This is due the amount of memory required to support Redis persistence and run Redis broker and system tasks.
+    When configuring the maximum number of Redis service instances that can be created you need to take into account the maximum memory each redis instance could use in correlation with how much total memory the Redis broker has.
+    We recommend you only allow up to 45% of your Redis broker's total memory to be used by all Redis instances.
+    This is due the amount of memory required to support Redis persistence, and run Redis broker and system tasks.
 
     <br />See below for example cases:
 
@@ -38,18 +44,18 @@ you need to take into account the maximum memory each Redis instance could use i
     		<th>Redis Service Instance Limit</th>
     	</tr>
     	<tr>
-    	 	<td>16 GB</td>
-    	 	<td>512 MB</td>
+    	 	<td>16GB</td>
+    	 	<td>512MB</td>
     	 	<td>14</td>
      	</tr>
       <tr>
-    	 	<td>16 GB</td>
-    	 	<td>256 MB</td>
+    	 	<td>16GB</td>
+    	 	<td>256MB</td>
     	 	<td>28</td>
      	</tr>
       <tr>
-    	 	<td>64 GB</td>
-    	 	<td>512 MB</td>
+    	 	<td>64GB</td>
+    	 	<td>512MB</td>
     	 	<td>56</td>
      	</tr>
     </table>
@@ -67,23 +73,200 @@ you need to take into account the maximum memory each Redis instance could use i
 
 1.  Click the **Save** button.
 
-### Dedicated-VM Plan
+####  <a id="dedicated-vm-config"></a>Dedicated-VM Plan
 
 1.  Select the **Resource Config** tab to change the allocation of resources for the Dedicated Node.
+![dedicated vm config](dedicated-vm-config.png)
 
     <br />By default, 5 dedicated nodes will be created, each capable of running one Redis instance. You can increase or decrease the number of dedicated nodes, the size of the Persistent and Ephemeral Disks, and the CPU and RAM, as required.
+The default VM size is small; it is important that the operator set the correct VM size to handle anticipated loads. The maxmemory value for the Redis process is set to be 45% of the RAM for that instance.
 
 1.  Click the **Save** button.
 
 
-<a id="syslog"></a>
-## Configuring Syslog Output
+### <a id="syslog"></a>Configure Syslog Output
 
 Pivotal recommends that operators configure a syslog output.
 
-1. Select the **Syslog** tab to setup the details of your syslog draining.
-1.  Add the Syslog address and Syslog port of your log management tool.
+1.  Add the Syslog address, Syslog port and transport protocol of your log management tool.
 
-    The information required for these fields will be provided by your log management tool.
+    The information required for these fields is provided by your log management tool.
+
+    ![syslog configuration](syslog-forwarding.png)
 
 1.  Click the **Save** button.
+
+
+### <a id="backup"></a>Configure Backups 
+
+You can configure backups to be run for all instances, across both service plans.
+
+The key features are:
+
+* Runs at midnight system time every day (not configurable)
+* Every instance is backed up, across both service plans
+* You can configure an S3 compatible blobstore as your destination
+* Data from Redis is flushed to disk, before the backup is started by running a `BGSAVE` on each instance
+* Currently certified and tested against AWS S3 only
+
+#### Configuration
+To enable backups to be taken, you need to configure the mandatory options in the `Redis for PCF` tile in OpsManager.
+
+Click on the tile in OpsManager, followed by the `Backups` link on the left hand menu.
+
+![View of OpsManager Backup configuration](backups.jpeg)
+
+##### Access Key ID
+This is your Access Key for your Blobstore
+
+**Required?** No - this is optional, dependent upon whether it is required by your blobstore
+
+##### Secret Access Key
+This is your Secret associated with your access key id
+
+**Required?** No - this is optional, dependent upon whether it is required by your blobstore
+
+##### Endpoint URL
+This is the endpoint for your blobstore e.g. `https://s3.amazonaws.com`
+
+**Required?** Yes - If you want to enable backups to be run, you must populate this field.
+
+##### Bucket Name
+Name of the bucket inside your blobstore you wish the files to be stored in.
+
+**Required?** Yes - If you want to enable backups to be run, you must populate this field.
+
+##### Path
+Path inside the bucket
+
+**Required?** Yes - If you want to enable backups to be run, you must populate this field.
+
+#### Redis BGSAVE Timeout
+This is the amount of time that the backup process will wait for the BGSAVE command to complete on your instance, before transferring the RDB file to your configured blobstore.
+
+You can increase this if required for your setup.
+
+**Required?** - Yes, this defaults to 600 seconds.
+
+#### AWS IAM Policy
+The minimum set of policies required in order to upload the backup files are:
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:CreateBucket",
+                "s3:PutObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::<bucket-name>",
+                "arn:aws:s3:::<bucket-name>/*"
+            ]
+        }
+    ]
+}
+```
+Make sure to replace `<bucket-name>` with your correct value.
+
+### <a id="azs"></a>Networks, Security, and Assigning AZs 
+                 
+####  <a id="network-configuration"></a>Network Configuration
+
+The following ports and ranges are used in this service:
+
+* Destination port 80 access to the service broker from the cloud controllers
+* Destination port 6379 access to all dedicated nodes from the Diego Cell and Diego Brain network(s)
+* Destination ports 32768 to 61000 on the service broker from the Diego Cell and Diego Brain network(s). This is only required for the shared service plan.
+* Outbound access to your chosen blobstore, typically HTTP 80 or HTTPS 443
+
+####  <a id="asg"></a> Application Security Groups###
+
+To allow this service to have network access you must create [Application Security Groups (ASGs)](http://docs.pivotal.io/pivotalcf/1-7/adminguide/app-sec-groups.html). Ensure your security group allows access to the Redis Service Broker VM and Dedicated VMs configured in your deployment. You can obtain the IP addresses for these VMs in Ops Manager under the <strong>Resource Config</strong> section for the Redis tile.</p>
+
+<p class="note"><strong>Note</strong>: Without ASGs, this service is unusable.</p>
+
+##### Application Container Network Connections 
+
+Application containers that use instances of the Redis service require the following outbound network connections:
+
+<table><thead>
+<tr>
+<th>Destination</th>
+<th>Ports</th>
+<th>Protocol</th>
+<th>Reason</th>
+</tr>
+</thead><tbody>
+<tr>
+<td><code>ASSIGNED_NETWORK</code></td>
+<td>32768-61000</td>
+<td>tcp</td>
+<td>Enable application to access shared vm service instance</td>
+</tr>
+<tr>
+<td><code>ASSIGNED_NETWORK</code></td>
+<td>6379</td>
+<td>tcp</td>
+<td>Enable application to access dedicated vm service instance</td>
+</tr>
+</tbody></table>
+
+Create an ASG called `redis-app-containers` with the above configuration and bind it to the appropriate space or, to give all started apps access, bind to the `default-running` ASG set and restart your apps. Example:
+
+```json
+[
+  {
+    "protocol": "tcp",
+    "destination": "<code>ASSIGNED_NETWORK</code>",
+    "ports": "6379"
+  }
+]
+```  
+
+####  <a id="az-config"></a>Assigning AZs
+Assigning multiple AZs to Redis jobs will not guarantee high availability.
+
+All of your Shared-VM instances will run on a single node in just one of the configured availability zones and are therefore not highly availabile.
+
+Each Dedicated-VM instance could be assigned to any of the configured availability zones, however each instance still operates as a single node with no clustering. This separation over availability zones provides no high availability.
+
+![AZ Assignment Diagram](AZ-assignment.png)
+
+## <a id="validation"></a>Validating Installation
+
+### Smoke tests
+
+Smoke tests are run as part of Redis for PCF installation to validate that the install succeeded. Smoke tests are described <a href="/redis/1-6/smoke-tests.html">here</a>.
+                
+## <a id="upgrades"></a>Upgrading Redis for PCF
+
+This product enables a reliable upgrade experience between versions of the product that is deployed through Ops Manager.
+
+The upgrade paths are detailed [here](http://docs.pivotal.io/redis/1-6/index.html) for each released version.
+
+To upgrade the product:
+
+* The Operator should download the latest version of the product from [Pivotal Network](https://network.pivotal.io/products/p-redis)
+* Upload the new .pivotal file to Ops Manager
+* Upload the stemcell associated with the update (*if required*)
+* Update any new mandatory configuration parameters (*if required*)
+* Press "Apply changes" and the rest of the process is automated
+
+During the upgrade deployment each Redis instance will experience a small period of downtime as each Redis instance is updated with the new software components. This downtime is because the Redis instances are single VMs operating in a non HA setup. The length of the downtime depends on whether there is a stemcell update to replace the operating system image or whether the existing VM can simply have the redis software updated. Stemcells updates incur additional downtime while the IaaS creates the new VM while updates without a stemcell update are faster.
+
+Ops Manager ensures the instances are updated with the new packages and any configuration changes are applied automatically.
+
+Upgrading to a newer version of the product does not cause any loss of data or configuration. This is explicitly tested for during our build and test process for a new release of the product.
+
+### Release policy
+
+When a new version of Redis is released we aim to release a new version of the product containing this soon after.
+
+Where there is a new version of Redis or another dependent software component such as the stemcell released due to a critical CVE, Pivotal's goal is to release a new version of the product within 48 hours. 
+
+## <a id="uninstall"></a>Uninstalling Redis for PCF
+
+To uninstall Redis for PCF, click on the trashcan icon in the lower right hand corner of the PCF Redis tile in the PCF Ops Manager Installation dashboard. Confirm deletion of the product and click apply changes.

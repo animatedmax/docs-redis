@@ -1,0 +1,104 @@
+---
+title: Overview of Redis for PCF v1.6
+owner: London Services
+---
+
+This topic describes the significant new features in Redis for PCF v1.6. 
+This topic also presents a checklist that you can use to decide if Redis for PCF is ready to meet your business requirements.
+
+##<a id="intro"></a> Introduction
+
+Redis for PCF v1.6 focuses on increased operability and compatibility with Ops Manager v1.8.  
+As of v1.6, metrics are emitted via the Loggregator Firehose. Metrics help operators monitor service health and usage. 
+New, enhanced logging provides a fine-grained history of service usage.
+
+## <a id="features"></a>New in This Release
+
+The following features are new in Redis for PCF v1.6 
+
++ <strong>Metrics</strong> — Redis emits a number of metrics you can use to monitor the health and 
+performance of your Redis deployment.  Redis for PCF sends these metrics to the Firehose.
+For more information, see <a href="/redis/1-6/monitoring.html">Monitoring Redis for PCF</a>.
+
++ <strong>Syslog forwarding protocols</strong> — Redis for PCF v1.6 supports 
+new protocols for syslog forwarding: TCP and RELP. 
+These new transport protocols widen the range of log management tools that can be used. 
+For more information, see <a href="/redis/1-6/installing.html#syslog">Configuring Syslog Output</a>.
+
++ <strong>Extended logging</strong> — New logging includes service instance creation and deletion. 
+Logs are emitted when a service instance is created, via `cf create-service p-redis <plan-name> <service-instance-name>`
+and also when a service instance is deleted, via `cf delete-service <service-instance-name>`.
+
++ <strong>Redis 3.2.1</strong> — Redis for PCF v1.6 uses Redis 3.2.1. 
+App developers can now use the new GEO API and BITFIELD commands.
+For more information, see the [Redis Commands documentation](http://redis.io/commands).
+
++ <strong>Enhanced smoke tests</strong> — In Redis for PCF v1.6 smoke tests 
+run in a more restrictive application security group (ASG) in the `system` org and `redis-smoke-test-space`. 
+Smoke tests run as an application instance; the restrictive ASG reduces security vulnerability. 
+Running the tests in `system` ensures the smoke tests don’t count as a billable application instance.
+For more information, see [Redis for PCF Smoke Tests](/redis/1-6/smoke-tests.html).
+
+##<a id="checklist"></a> Enterprise-Ready Checklist
+
+Review the following table to determine if Redis for PCF v1.6 has the features needed to support your enterprise.
+
+<table border="1" class="nice">
+<tr><th colspan=2>Plans and Instances</th><th>More Information</th></tr>
+<tr><td>Dedicated and shared plans</td><td>Redis for PCF v1.6 provides both dedicated VM and shared VM plans.</td><td>LINK</td></tr>
+<tr><td>Customizable plans</td><td>For the dedicated VM plan, the operator can customize the VM and disk size.</td></td><td>LINK</td></tr>
+<tr><td>Plan migrations</td><td>Not supported at present</td><td><em>n/a</em></td></tr>
+<tr><td>Customizable instances</td><td>Not supported at present</td><td><em>n/a</em></td></tr>
+<tr><td>Service instance quotas</td><td>Not supported at present</td><td><em>n/a</em></td></tr>
+
+<tr><th colspan=2>Installation and Upgrades</th><th>More Information</th></tr>
+<tr><td>Product upgrades</td><td>Redis for PCF v1.6 can be upgraded from v1.5 tiles</td>
+     <td><a href="/redis/1-6/installing.html#upgrades">Upgrading Redis for PCF</a></td></tr>
+<tr><td>Deployment Smoke Tests</td><td>Redis for PCF v1.6 installation and upgrade runs 
+        a post deployment BOSH errand that validates basic Redis operations</td>
+    <td><a href="/redis/1-6/smoke-tests.html">Smoke Tests</a></td></tr>
+<tr><td>Upgrade Control</td><td>Not supported at present</td><td><em>n/a</em></td></tr>
+
+<tr><th colspan=2>Maintenance and Backups</th><th>More Information</th></tr>
+<tr><td>Operational Monitoring and Logging</td><td>Redis for PCF v1.6 provides metrics for health monitoring and syslog redirection to external log ingestors.</td>
+    <td><a href="/redis/1-6/monitoring.html">Monitoring Redis for PCF</a></td></tr>
+<tr><td>Alerting</td><td>Not supported at present</td><td><em>n/a</em></td></tr>
+<tr><td>Long-Lived Canaries</td><td>Not supported at present</td><td><em>n/a</em></td></tr>
+<tr><td>Failure and Recovery Testing</td><td>Not supported at present</td><td><em>n/a</em></td></tr>
+<tr><td>Backup and Restore</td><td>Redis for PCF v1.6 provides automatic backups every 24 hours 
+   and manual restore</td><td><a href="/redis/1-6/manual-br.html">Manual Backup and Restore of Redis for PCF</a></td></tr>
+
+<tr><th colspan=2>Scale and Availability</th><th>More Information</th></tr>
+<tr><td>Scale</td><td>Redis for PCF has been tested with X data size</td><td>LINK</td></tr>
+<tr><td>Ability to Scale Up / Down</td><td>Operators can scale VMs up, but not down</td><td>LINK</td></tr>
+<tr><td>Highly Available</td><td>Not supported at present</td><td><em>n/a</em></td></tr>
+<tr><td>Rolling Deployments</td><td>Redis for PCF does not support rolling deployments because it is single node; the service is unavailable during upgrades.</td><td>LINK</td></tr>
+<tr><td>AZ Support</td><td>Assigning multiple AZs to Redis jobs does not guarantee high availability.</td>
+    <td><a href="#other-notes">About Multiple AZs in Redis for PCF v1.6</a></td></tr>
+<tr><td>Multi Datacenter Support</td><td>Not supported at present</td><td><em>n/a</em></td></tr>
+
+<tr><th colspan=2>Encryption</th><th>More Information</th></tr>
+<tr><td>Encrypted Communication in Transit</td><td>Redis for PCF v1.6 has been tested successfully with the BOSH IPsec Add-on</td>
+    <td><a href="https://docs.pivotal.io/addon-ipsec/index.html">Securing Data in Transit with the IPsec Add-on</td></tr>
+<tr><td>Encrypted Data at Rest</td><td>Redis does not provide encrypted data</td><td><em>n/a</em></td></tr>
+
+</table>
+
+## <a id="other-notes"></a>About Multiple AZs in Redis for PCF v1.6
+
+Redis for PCF v1.6 supports configuring multiple AZs. 
+However, assigning multiple AZs to Redis jobs does not guarantee high availability. 
+
++ Shared-VM instances run on a single node in just one of the configured availability zones and are therefore not highly available. 
++ Dedicated-VM instances can be assigned to any of the configured availability zones. 
+However each instance still operates as a single node with no clustering. 
+This separation over availability zones provides no high availability.
+
+
+##<a id="more-info"></a> More Information
+
+The following table lists where you can find topics related to the information on this page:
+
+| For more information about&hellip; | See&hellip; |
+|----------------------------|-------------|
+|the v1.6 releases       |<a href="/redis/1-6/release.html">Release Notes</a>|

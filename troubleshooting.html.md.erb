@@ -1,0 +1,72 @@
+---
+title: Troubleshooting Redis for PCF 
+owner: London Services
+---
+
+General troubleshooting guides for PCF:
+
+* <a href="http://docs.pivotal.io/pivotalcf/1-8/customizing/troubleshooting.html">PCF 1.8 </a>
+* <a href="https://docs.pivotal.io/pivotalcf/1-7/customizing/troubleshooting.html">PCF 1.7 </a>
+* <a href="http://docs.pivotal.io/pivotalcf/1-6/customizing/troubleshooting.html">PCF 1.6</a>
+
+<a href="https://discuss.pivotal.io/hc/en-us/sections/200215308-Services">Knowledgebase containing PCF services articles </a>
+Four Redis-specific articles:
+
+* <a href="https://discuss.pivotal.io/hc/en-us/articles/222006747-Pivotal-Cloud-Foundry-Redis-full-disk-scaling-issue">Can't redeploy PCF Redis if shared-vm persistent disk full</a>
+* <a href="https://discuss.pivotal.io/hc/en-us/articles/220952828-Pivotal-Cloud-Foundry-Redis-tile-upgrade-issue">Issue with upgrading tile</a>
+* <a href="https://discuss.pivotal.io/hc/en-us/articles/230513247-Pivotal-Cloud-Foundry-Redis-Deploy-Fails-to-Complete">Issue with deploy failing</a>
+* <a href="https://discuss.zendesk.com/knowledge/articles/235256867/en-us?brand_id=2400286">Redis Instance Alive after Successful De-provisioning</a>
+
+Other issues you might encounter:
+<table border='1' class='nice'>
+<tr>
+  <th width="22%">Error</th>
+  <td><code>Failed to target Cloud Foundry</code>
+  </td>
+</tr>
+<tr>
+  <th>Cause</th>
+  <td>Your Pivotal Cloud Foundry is unresponsive</td>
+</tr>
+<tr>
+  <th>Solution</th>
+  <td>Examine the detailed error message in the logs and check the <a href="https://docs.pivotal.io/pivotalcf/1-7/customizing/troubleshooting.html">PCF Troubleshooting Guide</a> for advice</td>
+</tr>
+</table>
+
+<table border='1' class='nice'>
+<tr>
+  <th width="22%">Error</th>
+  <td><code>Failed to bind Redis service instance to test app</code>
+  </td>
+</tr>
+<tr>
+  <th>Cause</th>
+  <td>Your deployment's broker has not been registered with Pivotal Cloud Foundry</td>
+</tr>
+<tr>
+  <th>Solution</th>
+  <td>Examine the broker-registrar installation step output and troubleshoot any problems.</td>
+</tr>
+</table>
+
+## Useful Debugging Information
+If you encounter an issue, here is a list of useful information to gather, especially before you perform any destructive operations such as `cf purge-service-offerings` or `bosh delete deployment`. 
+
+* PCF Redis version
+* Previous PCF Redis version if upgrading
+* Ops Manager version
+* Ops Manager installation logs
+* IaaS description
+* For all VMs:
+  * Copy of /var/vcap/sys/log (particularly the broker)
+  * Logs from a forwarded endpoint
+  * `monit summary`
+  * `Full ps aux` - Has monit done its job?
+  * `ps aux | grep redis-serve[r]` - Are Redis instances running?
+  * `df -h` - disk usage
+  * `free -m` - memory usage
+  * `cf m`
+  * `tree /var/vcap/store/cf-redis-broker/redis-data` (broker only)
+  * Copy of /var/vcap/store/cf-redis-broker/statefile.json
+

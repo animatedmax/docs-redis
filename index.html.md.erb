@@ -3,33 +3,55 @@ title: Redis for PCF
 owner: London Services
 ---
 
-This is documentation for the [Redis service for PCF](https://network.pivotal.io/products/p-redis).
+This is documentation for the Redis for PCF service tile. 
+This tile can be downloaded from [Pivotal Network](https://network.pivotal.io/products/p-redis).
 
-## Product snapshot
+This documentation:
+
++ Describes the features and architecture of Redis for PCF
++ Instructs the PCF operator on how to install, configure, maintain and backup Redis for PCF
++ Instructs the App developer on how to choose a service plan, create and delete Redis service instances, and bind an app
+
+##<a id="about-redis"></a> About Redis
+
+<strong><em>Redis</em></strong> is an easy to use, high speed key-value store that can be used as a database, cache, and message broker. 
+It supports a range of data structures including strings, lists, hashes, sets, bitmaps, hyperloglogs, and geospatial indexes. 
+It is easy to install and configure and is popular with engineers as a straightforward NoSQL data store. 
+It is used for everything from a quick way to store data for development and testing through to enterprise-scale apps like Twitter.
+
+##<a id="about"></a> About Redis for PCF
+<strong><em>Redis for PCF</em></strong> packages Redis for easy deployment and operability on Pivotal Cloud Foundry (PCF). 
+Redis for PCF can be used as a datastore or cache.
+Metrics and logging enable operators to monitor Redis health with backups every 24 hours. 
+New features are regularly introduced. Upgrading Redis for PCF is straightforward and preserves configuration and data.
+
+##<a id="snapshot"></a> Product Snapshot
 
 <dl>
-<dt>Current <a href="https://network.pivotal.io/products/p-redis">Redis</a> for PCF (PCF) Details</dt>
-<dd><strong>Version</strong>: 1.5.18 </dd>
-<dd><strong>Release Date</strong>: 24 August 2016</dd>
-<dd><strong>Software component version</strong>: Redis OSS 3.2.1</dd>
-<dd><strong>Compatible Ops Manager Version(s)</strong>: 1.7.x, 1.6.x</dd>
-<dd><strong>Compatible Elastic Runtime Version(s)</strong>: 1.7.x, 1.6.x</dd>
+<dt>Current <a href="https://network.pivotal.io/products/p-redis">Redis for PCF</a> details</dt>
+<dd><strong>Version</strong>: v1.6.3 </dd>
+<dd><strong>Release date</strong>: 7 December 2016</dd>
+<dd><strong>Software component version</strong>: Redis OSS v3.2.1</dd>
+<dd><strong>Compatible Ops Manager version</strong>: v1.8.0</dd>
+<dd><strong>Compatible Elastic Runtime version</strong>: v1.8.0</dd>
+<dd><strong>GCP support?</strong> Yes</dd>
 <dd><strong>vSphere support?</strong> Yes</dd>
-<dd><strong>AWS support?</strong> Yes</dd>
 <dd><strong>OpenStack support?</strong> Yes</dd>
-<dd><strong>IPsec support?</strong> Yes</dd>
+<dd><strong>AWS support?</strong> Yes</dd>
+<dd><strong>Azure support?</strong> Yes</dd>
+<dd><strong>IPSec support?</strong> Yes</dd>
 </dl>
 
-## Upgrading to the Latest Version
+##<a id="upgrading"></a> About Upgrading to the Latest Version
 
-Consider the following compatibility information before upgrading Redis for PCF.
+Consider the following compatibility information before upgrading Redis for PCF.  
 
-For more information, refer to the full [Product Version Matrix](http://docs.pivotal.io/compatibility-matrix.pdf).
+For more information, see the [Product Version Matrix](http://docs.pivotal.io/compatibility-matrix.pdf).
 
 <table border="1" class="nice">
 <tr>
-	  <th rowspan="2">Ops Manager Version</td>
-	  <th colspan="2">Supported Upgrades from Imported Redis Installation</td>
+	  <th rowspan="2">Ops Manager Version</th>
+	  <th colspan="2">Supported Upgrades from Imported Redis Installation</th>
 </tr>
 
 <tr>
@@ -37,36 +59,59 @@ For more information, refer to the full [Product Version Matrix](http://docs.piv
 	<th>To</th>
 </tr>
 <tr>
-    <th rowspan="6">1.5.x, 1.6.x, and 1.7.x</th>
-    <td rowspan="2">1.40 - 1.4.3</td>
-    <td>1.4.4 - 1.4.29</td>
+    <th rowspan="5">v1.5.x, v1.6.x</th>
+    <td rowspan="2">v1.40 – v1.4.3</td>
+    <td>v1.4.4 – latest v1.4.x</td>
 </tr>
 
 <tr>
-    <td>1.5.0 - 1.5.7</td>
+    <td>v1.5.0 – v1.5.7</td>
 </tr>
 
 <tr>
-    <td rowspan="2">1.4.4 - 1.4.27</td>
-    <td> Next 1.4.x version - 1.4.29</td>
+    <td rowspan="2">v1.4.4 – latest v1.4.x</td>
+    <td> Next v1.4.x – latest v1.4.x</td>
 </tr>
 
 <tr>
-    <td>1.5.0 - 1.5.17</td>
+    <td>v1.5.0 – latest v1.5.x</td>
 </tr>
 
 <tr>
-  <td>1.5.0 - 1.5.17</td>
-  <td>Next 1.5.x version - 1.5.18</td>
+  <td>v1.5.0 – latest v1.5.x</td>
+  <td>Next v1.5.x – latest v1.5.x</td>
 </tr>
-
+<tr>
+    <th>v1.7.x</th>
+    <td>v1.5.0 – latest version</td>
+    <td>v1.5.1 – latest version</td>
+</tr>
+<tr>
+    <th>v1.8.0 – latest version</th>
+    <td>v1.5.17 – latest version</td>
+    <td>v1.6.0 – latest version</td>
+</tr>
+<tr>
+    <th>v1.9.0 – latest version</th>
+    <td>v1.5.17 – latest version</td>
+    <td>v1.6.0 – latest version</td>
+</tr>
 
 </table>
 
-## Feedback
+##<a id="more-info"></a> More Information
 
-Please provide any bugs, feature requests, or questions to [the Pivotal Cloud Foundry Feedback list](mailto:pivotal-cf-feedback@pivotal.io).
+The following table lists where you can find topics related to the information on this page:
 
-## Further Reading
+| For more information about&hellip; | See&hellip; |
+|----------------------------|-------------|
+|product compatibility       |<a href="http://docs.pivotal.io/compatibility-matrix.pdf">Product Version Matrix</a>|
+|a particular version of Redis for PCF| <a href="/redis/1-6/release.html">Release Notes</a>|
+|how to upgrade Redis for PCF|<a href="/redis/1-6/installing.html#upgrades">Upgrading Redis for PCF</a>|
+|how to use Redis |<a href="http://redis.io/documentation">Redis Documentation</a>|
 
-* [Official Redis Documentation](http://redis.io/documentation)
+
+##<a id="feedback"></a> Feedback
+
+Please provide any bugs, feature requests, or questions to [the Pivotal Cloud Foundry Feedback list](mailto:pivotal–cf–feedback@pivotal.io).
+
